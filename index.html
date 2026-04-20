@@ -609,7 +609,7 @@
       <h2 class="section-title">LEGENDARY <span>COLLECTION</span></h2>
     </div>
     <div class="products-grid" id="productsGrid">
-      <!-- products injected via js but static fallback -->
+      <!-- products injected via js -->
     </div>
   </div>
 </section>
@@ -709,11 +709,11 @@
 <div id="toastMsg" class="toast-msg">✨ Item added</div>
 
 <script>
-  // PRODUCTS DATA
+  // PRODUCTS DATA with high-res images (each product gets a unique image URL)
   const products = [
-    { id: 1, name: "PHOENIX RISE", price: 34.99, image: "https://picsum.photos/id/42/400/500", category: "Mythic" },
-    { id: 2, name: "ODIN'S RAVEN", price: 34.99, image: "https://picsum.photos/id/22/400/500", category: "Norse" },
-    { id: 3, name: "SPARTAN SPIRIT", price: 34.99, image: "https://picsum.photos/id/26/400/500", category: "Warrior" }
+    { id: 1, name: "PHOENIX RISE", price: 34.99, image: "https://picsum.photos/id/42/500/600", category: "Mythic", imageAlt: "Phoenix Rise T-Shirt - fiery gold and red artwork" },
+    { id: 2, name: "ODIN'S RAVEN", price: 34.99, image: "https://picsum.photos/id/22/500/600", category: "Norse", imageAlt: "Odin's Raven T-Shirt - Norse mythology raven design" },
+    { id: 3, name: "SPARTAN SPIRIT", price: 34.99, image: "https://picsum.photos/id/26/500/600", category: "Warrior", imageAlt: "Spartan Spirit T-Shirt - helmet and spear graphic" }
   ];
 
   let cart = JSON.parse(localStorage.getItem("legend_cart")) || [];
@@ -784,58 +784,60 @@
     if (prod) addToCart(prod);
   };
 
-  // cart drawer handlers
-  const cartDrawer = document.getElementById("cartDrawer");
-  const cartOverlay = document.getElementById("cartOverlay");
-  document.getElementById("cartBtn").addEventListener("click", () => { cartDrawer.classList.add("open"); cartOverlay.classList.add("open"); });
-  document.getElementById("closeCartBtn").addEventListener("click", () => { cartDrawer.classList.remove("open"); cartOverlay.classList.remove("open"); });
-  cartOverlay.addEventListener("click", () => { cartDrawer.classList.remove("open"); cartOverlay.classList.remove("open"); });
-  document.getElementById("clearCartBtn").addEventListener("click", () => { cart = []; saveCart(); showToast("Cart cleared"); if(cartDrawer.classList.contains("open")) updateCartUI(); });
+  // ======================= UPDATED WHATSAPP LINK WITH IMAGES =======================
+  function buildWhatsAppOrderMessage() {
+    if (!cart.length) return null;
+    
+    // Create a rich text order summary with product images (inline via markdown/image URLs)
+    // WhatsApp supports image preview when you send image URLs, we'll attach each product image link.
+    let itemsText = "";
+    cart.forEach(item => {
+      // Each item: name, quantity, price, and the product image URL (visible preview in WhatsApp)
+      itemsText += `📦 *${item.name}* x${item.qty} — $${(item.price * item.qty).toFixed(2)}\n`;
+      itemsText += `   🖼️ Image: ${item.image}\n`;  // WhatsApp will show image preview when link is sent
+      itemsText += `   👕 LegendLo Premium Tee\n\n`;
+    });
+    
+    const total = cart.reduce((s,i) => s + (i.price * i.qty), 0);
+    const currentDate = new Date().toLocaleString();
+    
+    const message = `🛡️ *NEW LEGENDLO ORDER* 🛡️\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `*ORDER DETAILS:*\n` +
+                    `${itemsText}` +
+                    `━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💰 *TOTAL: $${total.toFixed(2)}*\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                    `📸 *Product Previews:*\n` +
+                    cart.map(item => `• ${item.name} → ${item.image}`).join("\n") +
+                    `\n\n✨ *Customer Request:* Hi LegendLo team! I'd like to place this order. Please confirm availability, shipping cost, and payment details. Thank you! 🔥\n\n` +
+                    `⏱️ Sent: ${currentDate}`;
+    
+    return message;
+  }
 
-  // WhatsApp Order Link with dynamic items
-  function updateWhatsAppLink() {
+  // Update WhatsApp checkout button dynamically with full product images
+  function updateWhatsAppCheckoutLink() {
     const btn = document.getElementById("whatsappCheckoutBtn");
     if (!btn) return;
-    if (!cart.length) { btn.href = "https://wa.me/94714896278?text=Hello%21%20I%20want%20to%20place%20an%20order%20but%20my%20cart%20is%20empty."; return; }
-    let itemsText = cart.map(i => `• ${i.name} x${i.qty} = $${(i.price * i.qty).toFixed(2)}`).join("%0A");
-    let total = cart.reduce((s,i) => s + (i.price * i.qty),0);
-    let message = `🛒 *LegendLo Order*%0A${itemsText}%0A%0A*Total: $${total.toFixed(2)}*%0A%0APlease confirm shipping & payment. Thanks!`;
-    btn.href = `https://wa.me/94714896278?text=${message}`;
+    
+    if (!cart.length) {
+      btn.href = "https://wa.me/94714896278?text=Hello%21%20I%27m%20interested%20in%20LegendLo%20products%2C%20but%20my%20cart%20is%20empty.%20Can%20you%20help%20me%20choose%3F";
+      return;
+    }
+    
+    const orderMessage = buildWhatsAppOrderMessage();
+    if (orderMessage) {
+      const encodedMessage = encodeURIComponent(orderMessage);
+      btn.href = `https://wa.me/94714896278?text=${encodedMessage}`;
+    } else {
+      btn.href = "https://wa.me/94714896278?text=I%20want%20to%20place%20an%20order%20for%20LegendLo%20gear.";
+    }
   }
 
-  // contact form
-  const contactForm = document.getElementById("contactForm");
-  if(contactForm) contactForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    showToast("📨 Message sent! A legend will reply soon.");
-    contactForm.reset();
-  });
-
-  // hamburger
-  const hamburger = document.getElementById("hamburgerBtn");
-  const mobileNav = document.getElementById("mobileNav");
-  hamburger.addEventListener("click", () => {
-    mobileNav.classList.toggle("open");
-    document.body.style.overflow = mobileNav.classList.contains("open") ? "hidden" : "";
-  });
-  document.querySelectorAll(".mobile-nav a").forEach(a => a.addEventListener("click", () => { mobileNav.classList.remove("open"); document.body.style.overflow = ""; }));
-
-  window.addEventListener("scroll", () => {
-    const nav = document.getElementById("navbar");
-    if(window.scrollY > 50) nav.classList.add("scrolled"); else nav.classList.remove("scrolled");
-  });
-
-  function init() {
-    renderProducts();
-    updateCartUI();
-    setInterval(() => { updateWhatsAppLink(); }, 200);
-    updateWhatsAppLink();
-    // set cart update observer
-    const origSave = saveCart;
-    window.saveCart = () => { origSave(); updateWhatsAppLink(); };
-    saveCart = window.saveCart;
-  }
-  init();
-</script>
-</body>
-</html>
+  // Also update floating WhatsApp button to include cart summary when clicked (optional)
+  function updateFloatingWhatsAppLink() {
+    const floatBtn = document.getElementById("whatsappFloatBtn");
+    if (!floatBtn) return;
+    if (cart.length) {
+      const quickMsg = `🔥 *LegendLo Order Ready* 🔥\nI have ${cart.reduce((s,i)=>s+i.qty,0)} item(s) in cart. Total: $${cart.reduce((s,i)=>s+(i.price*i.q
